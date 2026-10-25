@@ -1,0 +1,713 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  max-width: 100%;
+  overflow-x: clip;
+  background: #fff;
+  color: #111;
+  font-size: 15px;
+  line-height: 1.6;
+  transition: background 0.25s, color 0.25s;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Navbar */
+
+#menuBtn {
+  position: fixed;
+  top: 16px;
+  right: 18px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font-size: 25px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+#menuBtn:hover {
+  background: #f1f1f1;
+}
+
+#menuBtn:active {
+  transform: scale(0.94);
+}
+
+#navMenu {
+  position: fixed;
+  top: 0;
+  right: -280px;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(250px, 85vw);
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 85px 18px 24px;
+  list-style: none;
+  background: #111;
+  border-left: 1px solid #303030;
+  box-shadow: -10px 0 35px #00000015;
+  transition: right 0.3s ease;
+}
+
+#navMenu.active {
+  right: 0;
+}
+
+#navMenu a {
+  display: block;
+  padding: 13px 15px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #eaeaea;
+  font-size: 15px;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+#navMenu a:hover {
+  background: #292929;
+  color: #fff;
+}
+
+/* Hero */
+
+.headwerteks {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 32px 22px 0;
+  font-size: clamp(23px, 5vw, 32px);
+  line-height: 1.3;
+  letter-spacing: -0.8px;
+  font-weight: 750;
+}
+
+.headwertekstwo {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 12px 22px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* Form download */
+
+#formdownload {
+  width: calc(100% - 40px);
+  max-width: 650px;
+  margin: 24px auto 0;
+}
+
+#url {
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  padding: 15px 17px;
+  border: 1px solid #d6d6d6;
+  border-radius: 10px;
+  outline: none;
+  background: #f7f7f7;
+  color: #111;
+  font-size: 14px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+#url::placeholder {
+  color: #888;
+}
+
+#url:focus {
+  border-color: #111;
+  background: #fff;
+  box-shadow: 0 0 0 3px #0000000c;
+}
+
+#downloadBtn {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin: 12px 0 0;
+  padding: 12px 18px;
+  border: 1px solid #111;
+  border-radius: 10px;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, opacity 0.2s;
+}
+
+#downloadBtn:hover {
+  background: #303030;
+}
+
+#downloadBtn:active {
+  transform: scale(0.99);
+}
+
+#downloadBtn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* Status dan progress */
+
+#progressBox {
+  width: calc(100% - 40px);
+  max-width: 650px;
+  margin: 18px auto 0;
+  gap: 10px;
+  align-items: center;
+}
+
+#progressBox:not([hidden]) {
+  display: flex;
+}
+
+#progressBar {
+  flex: 1;
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border: none;
+  border-radius: 10px;
+  background: #e9e9e9;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+#progressBar::-webkit-progress-bar {
+  border-radius: 10px;
+  background: #e9e9e9;
+}
+
+#progressBar::-webkit-progress-value {
+  border-radius: 10px;
+  background: #111;
+  transition: width 0.2s ease;
+}
+
+#progressBar::-moz-progress-bar {
+  border-radius: 10px;
+  background: #111;
+}
+
+#progressText {
+  min-width: 38px;
+  color: #555;
+  font-size: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#statusDownload {
+  width: calc(100% - 40px);
+  max-width: 650px;
+  margin: 12px auto 0;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* Card hasil download */
+
+#hasil {
+  width: calc(100% - 32px);
+  max-width: 420px;
+  margin: 24px auto;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid #262626;
+  border-radius: 20px;
+  background: #121212;
+  color: #f5f5f5;
+  box-shadow: 0 18px 45px #00000026;
+}
+
+#hasil h2 {
+  margin: 0 0 12px;
+  color: #8a8a8a;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+#previewMedia {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+}
+
+#thumbnailMedia {
+  display: none !important;
+}
+
+#videoMedia {
+  order: 1;
+  width: 100%;
+  height: auto;
+  max-height: 420px;
+  margin: 0;
+  border-radius: 14px;
+  background: #000;
+  object-fit: contain;
+}
+
+#judulMedia {
+  order: 2;
+  margin: 14px 2px 0;
+  color: #e6e6e6;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.55;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+#audioMedia {
+  order: 3;
+  width: 100%;
+  height: 48px;
+  margin-top: 12px;
+  border-radius: 12px;
+}
+
+#daftarMedia {
+  order: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 16px 0 0;
+}
+
+/* Tombol download */
+
+.tombol-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid #fff;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s;
+}
+
+.tombol-download::before {
+  content: "⬇";
+  font-size: 15px;
+}
+
+.tombol-download:hover {
+  background: #e8e8e8;
+}
+
+.tombol-download:active {
+  transform: scale(0.98);
+}
+
+.tombol-download:not(:first-child) {
+  border-color: #3a3a3a;
+  background: transparent;
+  color: #f2f2f2;
+}
+
+.tombol-download:not(:first-child)::before {
+  content: "♪";
+}
+
+.tombol-download:not(:first-child):hover {
+  background: #1e1e1e;
+}
+
+/* Settings */
+
+.settings {
+  width: 100%;
+  max-width: 720px;
+  margin: 40px auto;
+  padding: 20px;
+  color: #111;
+}
+
+.settings-header {
+  margin-bottom: 25px;
+}
+
+.settings-header h2 {
+  margin-bottom: 8px;
+  font-size: 28px;
+}
+
+.settings-header p,
+.settings-info p {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.settings-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 20px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.settings-info h3 {
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+.settings-info p {
+  margin: 0;
+}
+
+.settings-badge {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 25px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: #ccc;
+  border-radius: 30px;
+  transition: 0.25s;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.25s;
+}
+
+.switch input:checked + .slider {
+  background: #111;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(21px);
+}
+
+.reset-settings {
+  margin-top: 25px;
+  padding: 12px 18px;
+  border: 1px solid #111;
+  border-radius: 8px;
+  background: white;
+  color: #111;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reset-settings:hover {
+  background: #111;
+  color: white;
+}
+
+/* Dark mode */
+
+body.dark-mode {
+  background: #111;
+  color: #f5f5f5;
+}
+
+body.dark-mode .headwertekstwo,
+body.dark-mode #statusDownload {
+  color: #aaa;
+}
+
+body.dark-mode #menuBtn {
+  background: #222;
+  color: #fff;
+  border-color: #444;
+}
+
+body.dark-mode #menuBtn:hover {
+  background: #333;
+}
+
+body.dark-mode #url {
+  background: #1c1c1c;
+  color: #fff;
+  border-color: #444;
+}
+
+body.dark-mode #url::placeholder {
+  color: #999;
+}
+
+body.dark-mode #url:focus {
+  background: #222;
+  border-color: #aaa;
+  box-shadow: 0 0 0 3px #ffffff10;
+}
+
+body.dark-mode #downloadBtn {
+  background: #f5f5f5;
+  color: #111;
+  border-color: #f5f5f5;
+}
+
+body.dark-mode #downloadBtn:hover {
+  background: #ddd;
+}
+
+body.dark-mode #progressBar,
+body.dark-mode #progressBar::-webkit-progress-bar {
+  background: #333;
+}
+
+body.dark-mode #progressBar::-webkit-progress-value,
+body.dark-mode #progressBar::-moz-progress-bar {
+  background: #f5f5f5;
+}
+
+body.dark-mode #progressText {
+  color: #bbb;
+}
+
+body.dark-mode .settings {
+  color: #f5f5f5;
+}
+
+body.dark-mode .settings-info p,
+body.dark-mode .settings-header p {
+  color: #aaa;
+}
+
+body.dark-mode .settings-card {
+  border-color: #333;
+}
+
+body.dark-mode .settings-badge {
+  border-color: #444;
+  color: #eee;
+}
+
+body.dark-mode .slider {
+  background: #555;
+}
+
+body.dark-mode .switch input:checked + .slider {
+  background: #f5f5f5;
+}
+
+body.dark-mode .switch input:checked + .slider::before {
+  background: #111;
+}
+
+body.dark-mode .reset-settings {
+  background: #222;
+  color: #fff;
+  border-color: #444;
+}
+
+body.dark-mode .reset-settings:hover {
+  background: #333;
+}
+
+body.dark-mode #hasil {
+  background: #121212;
+  color: #f5f5f5;
+}
+
+/* Gambar dibalik warnanya, video tidak */
+
+body.dark-mode img {
+  filter: invert(1);
+}
+
+body.dark-mode video,
+body.dark-mode iframe {
+  filter: none;
+}
+
+/* Mobile */
+
+@media (max-width: 480px) {
+  #menuBtn {
+    top: 12px;
+    right: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+  }
+
+  .headwerteks {
+    padding: 28px 18px 0;
+    font-size: 24px;
+  }
+
+  .headwertekstwo {
+    padding: 10px 18px 0;
+    font-size: 13px;
+  }
+
+  #formdownload {
+    width: calc(100% - 36px);
+    margin-top: 22px;
+  }
+
+  #url {
+    min-height: 50px;
+    padding: 13px 14px;
+    font-size: 13px;
+  }
+
+  #downloadBtn {
+    min-height: 46px;
+  }
+
+  #progressBox,
+  #statusDownload {
+    width: calc(100% - 36px);
+  }
+
+  #hasil {
+    width: calc(100% - 32px);
+    margin: 20px auto;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .tombol-download {
+    font-size: 13px;
+  }
+
+  #videoMedia {
+    max-height: 380px;
+  }
+
+  .settings {
+    padding: 18px;
+  }
+
+  .settings-card {
+    gap: 10px;
+  }
+
+  .settings-info h3 {
+    font-size: 15px;
+  }
+
+  .settings-info p {
+    font-size: 12px;
+  }
+}
+
+/* Desktop */
+
+@media (min-width: 768px) {
+  .headwerteks {
+    padding-top: 48px;
+  }
+
+  #hasil {
+    max-width: 440px;
+    padding: 18px;
+  }
+
+  #videoMedia {
+    max-height: 440px;
+  }
+}
+
+/* Kurangi animasi jika diminta perangkat */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Pastikan elemen hidden benar-benar disembunyikan */
+
+[hidden] {
+  display: none !important;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}

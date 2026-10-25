@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downly - Media Downloader</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+  <body>
+    <header>
+     <div class="header" id="home">
+        <h1>Downly</h1>
+        <button id="menuBtn" aria-label="Buka menu">☰</button>
+       <ul id="navMenu">
+         <li><a href="#home">Home</a></li>
+         <li><a href="#formdownload">Download</a></li>
+         <li><a href="#tutorial">Tutorial</a></li>
+         <li><a href="#settings">Settings</a></li>
+       </ul>
+     </div>
+    </header>
+    <hr>
+    <main>
+      <div class="content">
+        <form id="formdownload">
+        <h1 class="headwerteks">Download apapun, Dengan simple</h1>
+        <i class="headwertekstwo">Download video, photo, audio dari media sosial dengan mudah.</i>
+        <input type="text" name="url" id="url" placeholder="Paste url disini." required>
+        <button type="submit" id="downloadBtn">Download</button>
+          <div id="progressBox" hidden>
+  <progress id="progressBar" value="0" max="100"></progress>
+  <span id="progressText">0%</span>
+</div>
+
+<p id="statusDownload"></p>
+        </form>
+      </div>
+      <section id="hasil" hidden>
+  <h2>Hasil Download</h2>
+  <div id="previewMedia">
+    <img id="thumbnailMedia" alt="Thumbnail media" hidden>
+    <h3 id="judulMedia"></h3>
+    <video id="videoMedia" controls playsinline preload="metadata" hidden></video>
+    <audio id="audioMedia" controls hidden></audio>
+    <div id="daftarMedia"></div>
+  </div>
+      </section>
+      <div id="tutorial">
+        <img src="img/how.png">
+      </div>
+      <section id="settings" class="settings">
+  <div class="settings-header">
+    <h2>Settings</h2>
+    <p>Atur pengalaman menggunakan Downly.</p>
+  </div>
+
+  <div class="settings-card">
+    <div class="settings-info">
+      <h3>Mode Gelap</h3>
+      <p>Gunakan tampilan gelap pada Downly.</p>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="darkMode">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="settings-card">
+    <div class="settings-info">
+      <h3>Putar Preview Otomatis</h3>
+      <p>Putar video setelah hasil ditemukan.</p>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="autoPreview">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="settings-card">
+    <div class="settings-info">
+      <h3>Cooldown Download</h3>
+      <p>Jeda antarproses download.</p>
+    </div>
+    <span class="settings-badge">30 detik</span>
+  </div>
+
+  <button type="button" id="resetSettings" class="reset-settings">
+    Reset Pengaturan
+  </button>
+      </section>
+    </main>
+    <footer>
+      <p style="text-align: center;"> Downly &copy; 2026 Hamzxyz</p>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>
