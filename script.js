@@ -1,575 +1,545 @@
-const form = document.getElementById("formdownload");
-const inputUrl = document.getElementById("url");
-const tombol = document.getElementById("downloadBtn");
-const statusEl = document.getElementById("statusDownload");
-const hasil = document.getElementById("hasil");
-const thumbnail = document.getElementById("thumbnailMedia");
-const judul = document.getElementById("judulMedia");
-const daftarMedia = document.getElementById("daftarMedia");
-const video = document.getElementById("videoMedia");
-const progressBox = document.getElementById("progressBox");
-const progressBar = document.getElementById("progressBar");
-const progressText = document.getElementById("progressText");
+const platformDomains = {
+  tiktok: ["tiktok.com"],
+  youtube: ["youtube.com", "youtu.be"],
+  instagram: ["instagram.com"],
+  facebook: ["facebook.com", "fb.watch"]
+};
 
+const platformNames = {
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  instagram: "Instagram",
+  facebook: "Facebook"
+};
+
+const HISTORY_KEY = "downly_history_v3";
+const SETTINGS_KEY = "downly_settings_v3";
+
+const form = document.getElementById("formdownload");
+const urlInput = document.getElementById("url");
+const downloadBtn = document.getElementById("downloadBtn");
+const statusDownload = document.getElementById("statusDownload");
+const resultSection = document.getElementById("hasil");
+const resultCard = document.querySelector(".result-card");
+const thumbnail = document.getElementById("thumbnailMedia");
+const videoMedia = document.getElementById("videoMedia");
+const photoGallery = document.getElementById("galeriFoto");
+const mediaBadge = document.getElementById("mediaBadge");
+const title = document.getElementById("judulMedia");
+const caption = document.getElementById("captionMedia");
+const audioMedia = document.getElementById("audioMedia");
+const downloadMedia = document.getElementById("downloadMedia");
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+const darkModeInput = document.getElementById("darkMode");
+const saveHistoryInput = document.getElementById("saveHistory");
+
+let currentMedia = null;
+let settings = loadSettings();
+let history = loadHistory();
+
+/* ---------- Storage ---------- */
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    return {
+      darkMode: saved?.darkMode ?? false,
+      saveHistory: saved?.saveHistory ?? true
+    };
+  } catch {
+    return { darkMode: false, saveHistory: true };
+  }
+}
+
+function storeSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (error) {
+    console.error("Gagal menyimpan pengaturan:", error);
+  }
+}
+
+function loadHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(HISTORY_KEY));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistHistory() {
+  try {
+    if (settings.saveHistory) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
+  } catch (error) {
+    console.error("Gagal menyimpan riwayat:", error);
+  }
+}
+
+/* ---------- Helpers ---------- */
+function showStatus(message) {
+  statusDownload.textContent = message;
+}
+
+function detectPlatform(value) {
+  try {
+    const parsed = new URL(value);
+    if (!["https:", "http:"].includes(parsed.protocol)) return null;
+
+    const host = parsed.hostname.toLowerCase();
+
+    for (const [platform, domains] of Object.entries(platformDomains)) {
+      if (domains.some(domain => host === domain || host.endsWith("." + domain))) {
+        return platform;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/* ---------- TikTok resolver ---------- */
+async function getTikTokMedia(url) {
+  const response = await fetch(
+    "https://www.tikwm.com/api/?url=" + encodeURIComponent(url)
+  );
+
+  if (!response.ok) throw new Error("Server downloader tidak merespons.");
+
+  const json = await response.json();
+
+  if (json.code !== 0 || !json.data) {
+    throw new Error(json.msg || "Media tidak ditemukan.");
+  }
+
+  const data = json.data;
+
+  return {
+    id: String(data.id || Date.now()),
+    platform: "tiktok",
+    url,
+    title: data.title || "Media TikTok",
+    cover: data.cover || data.origin_cover || "",
+    video: data.hdplay || data.play || "",
+    audio: data.music || "",
+    images: Array.isArray(data.images) ? data.images.filter(Boolean) : [],
+    date: new Date().toISOString(),
+    favorite: false
+  };
+}
+
+/* ---------- Submit ---------- */
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const url = urlInput.value.trim();
+  const detected = detectPlatform(url);
+
+  if (!detected) {
+    showStatus("URL tidak valid. Masukkan tautan TikTok yang benar.");
+    return;
+  }
+
+  if (detected !== "tiktok") {
+    showStatus(platformNames[detected] + " belum didukung. Saat ini hanya TikTok.");
+    return;
+  }
+
+  downloadBtn.disabled = true;
+  downloadBtn.textContent = "Memproses…";
+  showStatus("Mengambil media dari TikTok...");
+
+  try {
+    const media = await getTikTokMedia(url);
+
+    currentMedia = media;
+    displayMedia(media);
+    addHistory(media);
+    updateFavoriteButton();
+
+    showStatus("Media berhasil diambil.");
+
+    resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (error) {
+    console.error(error);
+    showStatus("Gagal mengambil media. Periksa tautan atau coba lagi nanti.");
+  } finally {
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = "Ambil media";
+  }
+});
+
+/* ---------- Render result ---------- */
+function displayMedia(media) {
+  resultSection.hidden = false;
+
+  const images = Array.isArray(media.images) ? media.images : [];
+  const hasImages = images.length > 0;
+  const hasVideo = Boolean(media.video);
+
+  title.textContent = media.title || "Media";
+  caption.textContent = media.title || "";
+
+  /* Reset semua elemen preview */
+  videoMedia.pause();
+  videoMedia.removeAttribute("src");
+  videoMedia.removeAttribute("poster");
+  videoMedia.hidden = true;
+
+  thumbnail.hidden = true;
+  thumbnail.removeAttribute("src");
+
+  photoGallery.replaceChildren();
+  photoGallery.hidden = true;
+  photoGallery.removeAttribute("data-count");
+
+  mediaBadge.hidden = true;
+
+  /* Tentukan mode tampilan: foto ATAU video, tidak keduanya */
+  if (hasImages) {
+    resultCard.dataset.type = "photo";
+
+    photoGallery.hidden = false;
+    photoGallery.dataset.count = String(images.length >= 5 ? "many" : images.length);
+    renderPhotoGallery(images);
+
+    mediaBadge.textContent = images.length + " foto";
+    mediaBadge.hidden = false;
+
+    /* Slideshow: kalau ada video dari tikwm, sediakan link download */
+    configureMediaLink(
+      downloadMedia,
+      hasVideo ? media.video : "",
+      "Download slideshow"
+    );
+  } else if (hasVideo) {
+    resultCard.dataset.type = "video";
+
+    videoMedia.hidden = false;
+    if (media.cover) videoMedia.poster = media.cover;
+    videoMedia.src = media.video;
+    videoMedia.load();
+
+    mediaBadge.textContent = "Video";
+    mediaBadge.hidden = false;
+
+    configureMediaLink(downloadMedia, media.video, "Download video");
+  } else if (media.cover) {
+    resultCard.dataset.type = "image";
+
+    thumbnail.hidden = false;
+    thumbnail.src = media.cover;
+
+    mediaBadge.textContent = "Gambar";
+    mediaBadge.hidden = false;
+
+    configureMediaLink(downloadMedia, media.cover, "Download gambar");
+  } else {
+    resultCard.dataset.type = "empty";
+    downloadMedia.hidden = true;
+  }
+
+  configureMediaLink(audioMedia, media.audio, "Download audio");
+  updateFavoriteButton();
+}
+
+function renderPhotoGallery(images) {
+  images.forEach((imageUrl, index) => {
+    const link = document.createElement("a");
+    link.className = "photo-item";
+    link.href = imageUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.setAttribute("aria-label", `Buka foto ${index + 1}`);
+
+    const image = document.createElement("img");
+    image.src = imageUrl;
+    image.alt = `Foto ${index + 1}`;
+    image.loading = "lazy";
+    image.decoding = "async";
+
+    link.appendChild(image);
+    photoGallery.appendChild(link);
+  });
+}
+
+function configureMediaLink(element, url, label) {
+  element.hidden = !url;
+
+  if (!url) {
+    if (element.tagName === "A") element.removeAttribute("href");
+    return;
+  }
+
+  if (element.tagName === "A") {
+    element.href = url;
+    element.target = "_blank";
+    element.rel = "noopener noreferrer";
+    element.textContent = label;
+  }
+}
+
+/* ---------- History ---------- */
+function addHistory(media) {
+  if (!settings.saveHistory) return;
+
+  const existing = history.find(item => item.id === media.id);
+
+  if (existing) {
+    const favorite = existing.favorite;
+    Object.assign(existing, media, { favorite });
+  } else {
+    history.unshift(media);
+  }
+
+  history = history.slice(0, 100);
+  persistHistory();
+  renderHistory();
+}
+
+function makeButton(label, callback) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", callback);
+  return button;
+}
+
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  const empty = document.getElementById("emptyHistory");
+  if (!list) return;
+
+  list.replaceChildren();
+
+  const query = document.getElementById("searchHistory").value.trim().toLowerCase();
+  const filter = document.getElementById("filterHistory").value;
+  const sort = document.getElementById("sortHistory").value;
+
+  let items = history.filter(item =>
+    (item.title || "").toLowerCase().includes(query)
+  );
+
+  if (filter === "favorite") items = items.filter(item => item.favorite);
+
+  items.sort((a, b) => {
+    const difference = new Date(b.date) - new Date(a.date);
+    return sort === "oldest" ? -difference : difference;
+  });
+
+  empty.hidden = items.length > 0;
+
+  items.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "history-card";
+
+    const imageContainer = document.createElement("div");
+    imageContainer.className = "history-thumb";
+
+    if (item.cover) {
+      const image = document.createElement("img");
+      image.src = item.cover;
+      image.alt = "";
+      image.loading = "lazy";
+      imageContainer.appendChild(image);
+    } else {
+      imageContainer.textContent = platformNames[item.platform] || "Media";
+    }
+
+    const info = document.createElement("div");
+    info.className = "history-info";
+
+    const platform = document.createElement("span");
+    platform.className = "history-type";
+    platform.textContent = platformNames[item.platform] || "Media";
+
+    const heading = document.createElement("h3");
+    heading.textContent = item.title || "Media";
+
+    const date = document.createElement("small");
+    date.className = "history-date";
+    date.textContent = new Date(item.date).toLocaleString("id-ID");
+
+    const actions = document.createElement("div");
+    actions.className = "history-actions";
+
+    const open = makeButton("Buka", () => {
+      currentMedia = item;
+      displayMedia(item);
+      resultSection.scrollIntoView({ behavior: "smooth" });
+    });
+
+    const favorite = makeButton(
+      item.favorite ? "★ Favorit" : "☆ Favorit",
+      () => {
+        item.favorite = !item.favorite;
+        if (currentMedia?.id === item.id) {
+          currentMedia.favorite = item.favorite;
+          updateFavoriteButton();
+        }
+        persistHistory();
+        renderHistory();
+      }
+    );
+
+    const remove = makeButton("Hapus", () => {
+      history = history.filter(entry => entry.id !== item.id);
+      persistHistory();
+      renderHistory();
+    });
+
+    actions.append(open, favorite, remove);
+    info.append(platform, heading, date, actions);
+    card.append(imageContainer, info);
+
+    list.appendChild(card);
+  });
+}
+
+["searchHistory", "filterHistory", "sortHistory"].forEach(id => {
+  const element = document.getElementById(id);
+  element.addEventListener(
+    id === "searchHistory" ? "input" : "change",
+    renderHistory
+  );
+});
+
+document.getElementById("clearHistory").addEventListener("click", () => {
+  if (!history.length) return;
+  if (confirm("Hapus semua riwayat download?")) {
+    history = [];
+    persistHistory();
+    renderHistory();
+  }
+});
+
+/* ---------- Result actions ---------- */
+document.getElementById("closeResult").addEventListener("click", () => {
+  resultSection.hidden = true;
+});
+
+document.getElementById("favoriteCurrent").addEventListener("click", () => {
+  if (!currentMedia) return;
+
+  if (!settings.saveHistory) {
+    showStatus("Aktifkan simpan riwayat untuk menggunakan favorit.");
+    return;
+  }
+
+  const item = history.find(entry => entry.id === currentMedia.id);
+
+  if (!item) {
+    showStatus("Media belum tersimpan dalam riwayat.");
+    return;
+  }
+
+  item.favorite = !item.favorite;
+  currentMedia.favorite = item.favorite;
+
+  persistHistory();
+  renderHistory();
+  updateFavoriteButton();
+});
+
+function updateFavoriteButton() {
+  const button = document.getElementById("favoriteCurrent");
+  if (button) {
+    button.textContent = currentMedia?.favorite ? "★ Hapus favorit" : "☆ Favorit";
+  }
+}
+
+document.getElementById("copyMediaUrl").addEventListener("click", async () => {
+  if (!currentMedia) return;
+  try {
+    await navigator.clipboard.writeText(currentMedia.url);
+    showStatus("Tautan berhasil disalin.");
+  } catch {
+    showStatus("Gagal menyalin tautan. Salin URL secara manual.");
+  }
+});
+
+document.getElementById("pasteBtn").addEventListener("click", async () => {
+  try {
+    urlInput.value = await navigator.clipboard.readText();
+    urlInput.focus();
+  } catch {
+    showStatus("Tempel tautan secara manual ke kolom URL.");
+  }
+});
+
+/* ---------- Menu ---------- */
 const menuBtn = document.getElementById("menuBtn");
 const navMenu = document.getElementById("navMenu");
 
-const darkMode = document.getElementById("darkMode");
-const autoPreview = document.getElementById("autoPreview");
-const resetSettings = document.getElementById("resetSettings");
-
-const API = "https://www.tikwm.com/api/";
-const BASE = "https://www.tikwm.com";
-const COOLDOWN = 30;
-const TIMEOUT = 20000;
-
-let sedangProses = false;
-let cooldown = false;
-let timerCooldown = null;
-
-function setStatus(teks) {
-  if (statusEl) statusEl.textContent = teks;
-}
-
-function setProgress(nilai) {
-  if (progressBar) progressBar.value = nilai;
-  if (progressText) progressText.textContent = nilai + "%";
-}
-
-/* MENU */
-
-function tutupMenu() {
-  navMenu?.classList.remove("active");
-  menuBtn?.setAttribute("aria-expanded", "false");
-}
-
-menuBtn?.addEventListener("click", event => {
-  event.stopPropagation();
-
-  const terbuka = navMenu?.classList.toggle("active");
-
-  menuBtn?.setAttribute("aria-expanded", String(!!terbuka));
+menuBtn.addEventListener("click", () => {
+  const open = navMenu.classList.toggle("open");
+  menuBtn.setAttribute("aria-expanded", String(open));
 });
 
-document.addEventListener("click", event => {
-  if (!navMenu?.classList.contains("active")) return;
-
-  const target = event.target;
-
-  if (
-    target instanceof Node &&
-    !navMenu.contains(target) &&
-    !menuBtn?.contains(target)
-  ) {
-    tutupMenu();
-  }
-});
-
-navMenu?.querySelectorAll("a").forEach(link => {
-  link.addEventListener("click", tutupMenu);
-});
-
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    tutupMenu();
-  }
-});
-
-/* URL MEDIA */
-
-function normalisasiUrl(url) {
-  if (typeof url !== "string" || !url.trim()) {
-    return null;
-  }
-
-  url = url.trim();
-
-  if (/^https?:\/\//i.test(url)) {
-    return url;
-  }
-
-  if (url.startsWith("//")) {
-    return "https:" + url;
-  }
-
-  if (url.startsWith("/")) {
-    return BASE + url;
-  }
-
-  return null;
-}
-
-function bersihkanHasil() {
-  if (hasil) hasil.hidden = true;
-
-  if (daftarMedia) {
-    daftarMedia.replaceChildren();
-  }
-
-  if (judul) {
-    judul.textContent = "";
-  }
-
-  if (video) {
-    video.pause();
-    video.removeAttribute("src");
-    video.removeAttribute("poster");
-    video.load();
-    video.hidden = true;
-  }
-
-  if (thumbnail) {
-    thumbnail.removeAttribute("src");
-    thumbnail.hidden = true;
-  }
-
-  setProgress(0);
-}
-
-/* DOWNLOAD TANPA PINDAH TAB */
-
-async function ambilFile(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    TIMEOUT
-  );
-
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
-
-    const blob = await response.blob();
-
-    if (!blob.size) {
-      throw new Error("File kosong.");
-    }
-
-    if (
-      /text\/html|application\/json/i.test(blob.type)
-    ) {
-      throw new Error("Server tidak mengirim file media.");
-    }
-
-    return blob;
-  } catch (error) {
-    if (error.name === "AbortError") {
-      throw new Error("Download terlalu lama.");
-    }
-
-    if (
-      error instanceof TypeError ||
-      /failed to fetch/i.test(error.message)
-    ) {
-      throw new Error(
-        "Server memblokir akses browser (CORS)."
-      );
-    }
-
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function ekstensiFile(blob, tipe) {
-  const mime = blob.type || "";
-
-  if (/video\/mp4/i.test(mime)) return "mp4";
-  if (/audio\/mpeg/i.test(mime)) return "mp3";
-  if (/audio\/mp4/i.test(mime)) return "m4a";
-  if (/image\/jpeg/i.test(mime)) return "jpg";
-  if (/image\/png/i.test(mime)) return "png";
-  if (/image\/webp/i.test(mime)) return "webp";
-
-  return tipe === "audio" ? "mp3" : "mp4";
-}
-
-function simpanBlob(blob, namaFile) {
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = blobUrl;
-  link.download = namaFile;
-
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  setTimeout(() => {
-    URL.revokeObjectURL(blobUrl);
-  }, 15000);
-}
-
-function buatTombol(teks, url, namaDasar, tipe) {
-  const button = document.createElement("button");
-
-  button.type = "button";
-  button.textContent = teks;
-  button.className = "tombol-download";
-
-  button.addEventListener("click", async () => {
-    if (button.disabled) return;
-
-    button.disabled = true;
-    button.textContent = "Mengunduh...";
-
-    try {
-      const blob = await ambilFile(url);
-      const ekstensi = ekstensiFile(blob, tipe);
-
-      simpanBlob(
-        blob,
-        `${namaDasar}.${ekstensi}`
-      );
-
-      setStatus("File berhasil disiapkan untuk diunduh.");
-    } catch (error) {
-      console.error("Download error:", error);
-      setStatus("Gagal mengunduh: " + error.message);
-    } finally {
-      button.disabled = false;
-      button.textContent = teks;
-    }
+navMenu.querySelectorAll("a").forEach(link => {
+  link.addEventListener("click", () => {
+    navMenu.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
   });
-
-  daftarMedia?.appendChild(button);
-}
-
-/* API TIKTOK */
-
-async function ambilDataTikTok(url) {
-  const controller = new AbortController();
-
-  const timer = setTimeout(
-    () => controller.abort(),
-    TIMEOUT
-  );
-
-  try {
-    const body = new URLSearchParams({
-      url: url,
-      hd: "1"
-    });
-
-    const response = await fetch(API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: body.toString(),
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error(
-          "API sedang sibuk. Coba lagi nanti."
-        );
-      }
-
-      throw new Error(
-        "Server API error: HTTP " + response.status
-      );
-    }
-
-    const json = await response.json();
-
-    if (json.code !== 0 || !json.data) {
-      throw new Error(
-        json.msg || "Video TikTok tidak ditemukan."
-      );
-    }
-
-    return json.data;
-  } catch (error) {
-    if (error.name === "AbortError") {
-      throw new Error(
-        "Server terlalu lama merespons."
-      );
-    }
-
-    if (error instanceof TypeError) {
-      throw new Error(
-        "Tidak bisa menghubungi API. Periksa koneksi atau CORS."
-      );
-    }
-
-    throw error;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/* TAMPILKAN HASIL */
-
-function tampilkanHasil(data) {
-  const urlVideo =
-    normalisasiUrl(data.hdplay) ||
-    normalisasiUrl(data.play);
-
-  const urlAudio = normalisasiUrl(data.music);
-
-  const urlThumbnail =
-    normalisasiUrl(data.origin_cover) ||
-    normalisasiUrl(data.cover);
-
-  if (!urlVideo && !urlAudio) {
-    throw new Error(
-      "Link media tidak ditemukan dari API."
-    );
-  }
-
-  if (judul) {
-    judul.textContent =
-      data.title || "Video TikTok";
-  }
-
-  if (video && urlVideo) {
-    video.controls = true;
-    video.playsInline = true;
-    video.hidden = false;
-    video.src = urlVideo;
-
-    if (urlThumbnail) {
-      video.poster = urlThumbnail;
-    }
-
-    video.load();
-
-    const otomatis =
-      localStorage.getItem("downlyAutoPreview") === "true";
-
-    if (otomatis) {
-      video.play().catch(() => {
-        setStatus(
-          "Preview siap. Tekan tombol play untuk memutar."
-        );
-      });
-    }
-  } else if (thumbnail && urlThumbnail) {
-    thumbnail.src = urlThumbnail;
-    thumbnail.hidden = false;
-  }
-
-  if (urlVideo) {
-    buatTombol(
-      "Unduh Video",
-      urlVideo,
-      "downly-tiktok",
-      "video"
-    );
-  }
-
-  if (urlAudio) {
-    buatTombol(
-      "Unduh Audio",
-      urlAudio,
-      "downly-tiktok-audio",
-      "audio"
-    );
-  }
-
-  if (hasil) {
-    hasil.hidden = false;
-  }
-
-  setStatus("Video berhasil ditemukan!");
-}
-
-/* COOLDOWN 30 DETIK */
-
-function mulaiCooldown() {
-  clearInterval(timerCooldown);
-
-  cooldown = true;
-
-  let sisa = COOLDOWN;
-
-  if (tombol) {
-    tombol.disabled = true;
-  }
-
-  function updateTombol() {
-    const menit = Math.floor(sisa / 60);
-    const detik = sisa % 60;
-
-    if (tombol) {
-      tombol.textContent =
-        `Tunggu ${menit}:${String(detik).padStart(2, "0")}`;
-    }
-  }
-
-  updateTombol();
-
-  timerCooldown = setInterval(() => {
-    sisa--;
-
-    if (sisa <= 0) {
-      clearInterval(timerCooldown);
-      timerCooldown = null;
-      cooldown = false;
-
-      if (tombol) {
-        tombol.disabled = false;
-        tombol.textContent = "Download";
-      }
-
-      setStatus(
-        "Siap untuk download berikutnya."
-      );
-
-      return;
-    }
-
-    updateTombol();
-  }, 1000);
-}
-
-/* PROSES DOWNLOAD */
-
-form?.addEventListener("submit", async event => {
-  event.preventDefault();
-
-  if (sedangProses || cooldown) return;
-
-  let url = inputUrl?.value.trim() || "";
-
-  if (!url) {
-    setStatus(
-      "Masukkan URL TikTok terlebih dahulu."
-    );
-    return;
-  }
-
-  if (!/^https?:\/\//i.test(url)) {
-    url = "https://" + url;
-  }
-
-  let host;
-
-  try {
-    host = new URL(url).hostname.toLowerCase();
-  } catch {
-    setStatus("URL tidak valid.");
-    return;
-  }
-
-  if (
-    host !== "tiktok.com" &&
-    !host.endsWith(".tiktok.com")
-  ) {
-    setStatus(
-      "Downly hanya mendukung TikTok."
-    );
-    return;
-  }
-
-  sedangProses = true;
-
-  if (tombol) {
-    tombol.disabled = true;
-  }
-
-  bersihkanHasil();
-
-  if (progressBox) {
-    progressBox.hidden = false;
-  }
-
-  setProgress(20);
-  setStatus("Menghubungi TikWM...");
-
-  try {
-    setProgress(45);
-
-    const data = await ambilDataTikTok(url);
-
-    setProgress(75);
-
-    tampilkanHasil(data);
-
-    setProgress(100);
-
-    mulaiCooldown();
-  } catch (error) {
-    console.error("Downly error:", error);
-
-    bersihkanHasil();
-
-    setStatus("Gagal: " + error.message);
-  } finally {
-    sedangProses = false;
-
-    if (progressBox) {
-      progressBox.hidden = true;
-    }
-
-    if (!cooldown && tombol) {
-      tombol.disabled = false;
-      tombol.textContent = "Download";
-    }
-  }
 });
 
-/* SETTINGS */
+/* ---------- Settings ---------- */
+function applySettings() {
+  document.body.classList.toggle("dark-mode", settings.darkMode);
 
-function muatSettings() {
-  const gelap =
-    localStorage.getItem("downlyDarkMode") === "true";
+  darkModeInput.checked = settings.darkMode;
+  saveHistoryInput.checked = settings.saveHistory;
 
-  const otomatis =
-    localStorage.getItem("downlyAutoPreview") === "true";
+  themeToggleBtn.setAttribute("aria-pressed", String(settings.darkMode));
+  document.getElementById("themeButtonLabel").textContent =
+    settings.darkMode ? "Mode terang" : "Mode gelap";
 
-  if (darkMode) {
-    darkMode.checked = gelap;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.content = settings.darkMode ? "#0a0a0a" : "#ffffff";
   }
-
-  if (autoPreview) {
-    autoPreview.checked = otomatis;
-  }
-
-  document.body.classList.toggle(
-    "dark-mode",
-    gelap
-  );
 }
 
-darkMode?.addEventListener("change", () => {
-  const aktif = darkMode.checked;
+function toggleTheme() {
+  settings.darkMode = !settings.darkMode;
+  storeSettings();
+  applySettings();
+}
 
-  document.body.classList.toggle(
-    "dark-mode",
-    aktif
-  );
+themeToggleBtn.addEventListener("click", toggleTheme);
 
-  localStorage.setItem(
-    "downlyDarkMode",
-    String(aktif)
-  );
+darkModeInput.addEventListener("change", event => {
+  settings.darkMode = event.target.checked;
+  storeSettings();
+  applySettings();
 });
 
-autoPreview?.addEventListener("change", () => {
-  localStorage.setItem(
-    "downlyAutoPreview",
-    String(autoPreview.checked)
-  );
-});
+saveHistoryInput.addEventListener("change", event => {
+  settings.saveHistory = event.target.checked;
 
-resetSettings?.addEventListener("click", () => {
-  localStorage.removeItem("downlyDarkMode");
-  localStorage.removeItem("downlyAutoPreview");
-
-  muatSettings();
-
-  if (video) {
-    video.pause();
+  if (!settings.saveHistory) {
+    history = [];
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  } else {
+    persistHistory();
   }
+
+  storeSettings();
 });
 
-muatSettings();
+document.getElementById("resetSettings").addEventListener("click", () => {
+  settings = { darkMode: false, saveHistory: true };
+  history = [];
+  localStorage.removeItem(HISTORY_KEY);
+  storeSettings();
+  applySettings();
+  renderHistory();
+});
+
+/* ---------- Init ---------- */
+applySettings();
+renderHistory();

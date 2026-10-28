@@ -1,97 +1,193 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Downly - Media Downloader</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#faf8f4">
+  <meta name="description" content="Downly — Download video TikTok tanpa ribet">
+  <title>Downly — Download video TikTok</title>
   <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
-  <body>
-    <header>
-     <div class="header" id="home">
-        <h1>Downly</h1>
-        <button id="menuBtn" aria-label="Buka menu">☰</button>
-       <ul id="navMenu">
-         <li><a href="#home">Home</a></li>
-         <li><a href="#formdownload">Download</a></li>
-         <li><a href="#tutorial">Tutorial</a></li>
-         <li><a href="#settings">Settings</a></li>
-       </ul>
-     </div>
-    </header>
-    <hr>
-    <main>
-      <div class="content">
-        <form id="formdownload">
-        <h1 class="headwerteks">Download apapun, Dengan simple</h1>
-        <i class="headwertekstwo">Download video, photo, audio dari media sosial dengan mudah.</i>
-        <input type="text" name="url" id="url" placeholder="Paste url disini." required>
-        <button type="submit" id="downloadBtn">Download</button>
-          <div id="progressBox" hidden>
-  <progress id="progressBar" value="0" max="100"></progress>
-  <span id="progressText">0%</span>
-</div>
+<body>
+  <header class="topbar">
+    <a class="logo" href="#home">downly<span>.</span></a>
 
-<p id="statusDownload"></p>
+    <nav class="nav-menu" id="navMenu">
+      <a href="#riwayat">Riwayat</a>
+      <a href="#tutorial">Panduan</a>
+      <a href="#settings">Pengaturan</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="theme-button" id="themeToggleBtn" type="button" aria-pressed="false">
+        <span id="themeButtonLabel">Mode gelap</span>
+        <span class="theme-mark" aria-hidden="true">◐</span>
+      </button>
+      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-label="Buka menu">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-copy">
+        <h1>Download video TikTok tanpa ribet.</h1>
+        <p class="hero-description">
+          Tempel tautan TikTok, ambil video atau audionya. Gratis, tanpa iklan, tanpa perlu daftar akun.
+        </p>
+      </div>
+
+      <div class="download-card">
+        <form id="formdownload">
+          <label for="url">Tempel tautan TikTok</label>
+
+          <div class="url-box">
+            <input
+              type="url"
+              id="url"
+              placeholder="https://www.tiktok.com/..."
+              autocomplete="url"
+              required
+            >
+            <button class="paste-btn" id="pasteBtn" type="button">Tempel</button>
+          </div>
+
+          <button class="primary-btn" id="downloadBtn" type="submit">Ambil media</button>
+
+          <p class="status-message" id="statusDownload" aria-live="polite">
+            Masukkan tautan TikTok di atas.
+          </p>
         </form>
       </div>
-      <section id="hasil" hidden>
-  <h2>Hasil Download</h2>
-  <div id="previewMedia">
-    <img id="thumbnailMedia" alt="Thumbnail media" hidden>
-    <h3 id="judulMedia"></h3>
-    <video id="videoMedia" controls playsinline preload="metadata" hidden></video>
-    <audio id="audioMedia" controls hidden></audio>
-    <div id="daftarMedia"></div>
-  </div>
-      </section>
-      <div id="tutorial">
-        <img src="img/how.png">
+    </section>
+
+    <section class="section" id="hasil" hidden>
+      <div class="section-heading">
+        <h2>Hasil</h2>
+        <button class="icon-button" id="closeResult" type="button" aria-label="Tutup">×</button>
       </div>
-      <section id="settings" class="settings">
-  <div class="settings-header">
-    <h2>Settings</h2>
-    <p>Atur pengalaman menggunakan Downly.</p>
-  </div>
 
-  <div class="settings-card">
-    <div class="settings-info">
-      <h3>Mode Gelap</h3>
-      <p>Gunakan tampilan gelap pada Downly.</p>
-    </div>
-    <label class="switch">
-      <input type="checkbox" id="darkMode">
-      <span class="slider"></span>
-    </label>
-  </div>
+      <article class="result-card" data-type="empty">
+        <div class="result-preview">
+          <video id="videoMedia" controls playsinline hidden></video>
+          <img id="thumbnailMedia" src="" alt="Thumbnail media" hidden>
+          <div class="photo-gallery" id="galeriFoto" hidden></div>
+        </div>
 
-  <div class="settings-card">
-    <div class="settings-info">
-      <h3>Putar Preview Otomatis</h3>
-      <p>Putar video setelah hasil ditemukan.</p>
-    </div>
-    <label class="switch">
-      <input type="checkbox" id="autoPreview">
-      <span class="slider"></span>
-    </label>
-  </div>
+        <div class="result-details">
+          <span class="media-badge" id="mediaBadge" hidden></span>
+          <h3 id="judulMedia">Media</h3>
+          <p id="captionMedia" class="result-caption"></p>
 
-  <div class="settings-card">
-    <div class="settings-info">
-      <h3>Cooldown Download</h3>
-      <p>Jeda antarproses download.</p>
-    </div>
-    <span class="settings-badge">30 detik</span>
-  </div>
+          <div class="download-options">
+            <a id="downloadMedia" class="primary-download-btn" href="#" hidden download>Download</a>
+            <a id="audioMedia" class="secondary-btn" href="#" hidden>Download audio</a>
+            <button id="copyMediaUrl" class="secondary-btn" type="button">Salin tautan</button>
+            <button id="favoriteCurrent" class="secondary-btn" type="button">☆ Favorit</button>
+          </div>
+        </div>
+      </article>
+    </section>
 
-  <button type="button" id="resetSettings" class="reset-settings">
-    Reset Pengaturan
-  </button>
-      </section>
-    </main>
-    <footer>
-      <p style="text-align: center;"> Downly &copy; 2026 Hamzxyz</p>
-    </footer>
-    <script src="script.js"></script>
-  </body>
+    <section class="section" id="riwayat">
+      <div class="section-heading">
+        <h2>Riwayat</h2>
+        <button class="text-link-button" id="clearHistory" type="button">Hapus semua</button>
+      </div>
+
+      <div class="history-controls">
+        <input type="search" id="searchHistory" placeholder="Cari judul...">
+        <select id="filterHistory">
+          <option value="all">Semua media</option>
+          <option value="favorite">Favorit</option>
+        </select>
+        <select id="sortHistory">
+          <option value="newest">Terbaru</option>
+          <option value="oldest">Terlama</option>
+        </select>
+      </div>
+
+      <div class="history-grid" id="historyList"></div>
+
+      <div class="empty-state" id="emptyHistory">
+        <strong>Belum ada riwayat</strong>
+        <p>Media yang berhasil diambil akan muncul di sini.</p>
+      </div>
+    </section>
+
+    <section class="section" id="tutorial">
+      <div class="section-heading">
+        <h2>Cara pakai</h2>
+      </div>
+
+      <div class="tutorial-grid">
+        <article class="step-card">
+          <span>1</span>
+          <h3>Salin tautan</h3>
+          <p>Buka aplikasi TikTok, ketuk ikon bagikan, lalu pilih "Salin tautan".</p>
+        </article>
+
+        <article class="step-card">
+          <span>2</span>
+          <h3>Tempel di sini</h3>
+          <p>Kembali ke halaman ini, tempel tautan di kolom yang tersedia.</p>
+        </article>
+
+        <article class="step-card">
+          <span>3</span>
+          <h3>Ambil media</h3>
+          <p>Klik "Ambil media", lalu pilih file yang ingin disimpan.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="settings">
+      <div class="section-heading">
+        <h2>Pengaturan</h2>
+      </div>
+
+      <div class="settings-list">
+        <div class="setting-row">
+          <div>
+            <strong>Mode gelap</strong>
+            <p>Ganti tampilan halaman.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="darkMode">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <strong>Simpan riwayat</strong>
+            <p>Simpan riwayat di browser perangkat.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="saveHistory" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <strong>Reset pengaturan</strong>
+            <p>Kembalikan pengaturan ke awal.</p>
+          </div>
+          <button class="secondary-btn" id="resetSettings" type="button">Reset</button>
+        </div>
+      </div>
+
+      <p class="small-note">
+        Gunakan media sesuai izin pemilik dan ketentuan platform sumber.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <a class="logo" href="#home">downly<span>.</span></a>
+    <p>Alat kecil untuk menyimpan video TikTok.</p>
+    <span>© 2026 Downly</span>
+  </footer>
+</body>
 </html>
