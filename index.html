@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#faf8f4">
-  <meta name="description" content="Downly — Download video TikTok tanpa ribet">
-  <title>Downly — Download video TikTok</title>
+  <meta name="description" content="Downly — Download video, foto, dan audio dari TikTok, Instagram, YouTube, Facebook, dan X">
+  <title>Downly — Download video & foto</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
@@ -14,6 +14,7 @@
     <a class="logo" href="#home">downly<span>.</span></a>
 
     <nav class="nav-menu" id="navMenu">
+      <a href="#platform">Platform</a>
       <a href="#riwayat">Riwayat</a>
       <a href="#tutorial">Panduan</a>
       <a href="#settings">Pengaturan</a>
@@ -31,34 +32,92 @@
   <main>
     <section class="hero" id="home">
       <div class="hero-copy">
-        <h1>Download video TikTok tanpa ribet.</h1>
+        <h1>Download video tanpa ribet.</h1>
         <p class="hero-description">
-          Tempel tautan TikTok, ambil video atau audionya. Gratis, tanpa iklan, tanpa perlu daftar akun.
+          Tempel tautan dari TikTok, Instagram, YouTube, Facebook, atau X. Ambil video, foto, atau audionya. Gratis, tanpa iklan, tanpa daftar akun.
         </p>
       </div>
 
       <div class="download-card">
         <form id="formdownload">
-          <label for="url">Tempel tautan TikTok</label>
+          <div class="mode-switch" role="group" aria-label="Mode input">
+            <button type="button" id="modeSingle" aria-pressed="true">Satu link</button>
+            <button type="button" id="modeBatch" aria-pressed="false">Banyak link</button>
+          </div>
 
-          <div class="url-box">
-            <input
-              type="url"
-              id="url"
-              placeholder="https://www.tiktok.com/..."
-              autocomplete="url"
-              required
-            >
+          <label for="url" id="urlLabel">Tempel tautan</label>
+
+          <div class="url-box" id="urlBox">
+            <input type="url" id="url" placeholder="https://..." autocomplete="url" required>
             <button class="paste-btn" id="pasteBtn" type="button">Tempel</button>
           </div>
+
+          <textarea id="urlMulti" class="multi-input" rows="5" placeholder="Satu link per baris (maks. 20)" hidden></textarea>
 
           <button class="primary-btn" id="downloadBtn" type="submit">Ambil media</button>
 
           <p class="status-message" id="statusDownload" aria-live="polite">
-            Masukkan tautan TikTok di atas.
+            Masukkan tautan di atas.
           </p>
+
+          <ol class="batch-list" id="batchList" hidden></ol>
         </form>
       </div>
+    </section>
+
+    <!-- SECTION PLATFORM BARU -->
+    <section class="section" id="platform">
+      <div class="section-heading">
+        <h2>Platform didukung</h2>
+      </div>
+
+      <div class="platform-list">
+        <div class="platform-item is-active" data-platform="tiktok">
+          <div class="platform-icon">TT</div>
+          <div class="platform-copy">
+            <strong>TikTok</strong>
+            <small>Video & Foto</small>
+          </div>
+          <span class="platform-status">aktif</span>
+        </div>
+
+        <div class="platform-item is-active" data-platform="youtube">
+          <div class="platform-icon">YT</div>
+          <div class="platform-copy">
+            <strong>YouTube</strong>
+            <small>Video & Audio</small>
+          </div>
+          <span class="platform-status">aktif</span>
+        </div>
+
+        <div class="platform-item is-active" data-platform="instagram">
+          <div class="platform-icon">IG</div>
+          <div class="platform-copy">
+            <strong>Instagram</strong>
+            <small>Video & Foto</small>
+          </div>
+          <span class="platform-status">aktif</span>
+        </div>
+
+        <div class="platform-item is-active" data-platform="facebook">
+          <div class="platform-icon">FB</div>
+          <div class="platform-copy">
+            <strong>Facebook</strong>
+            <small>Video</small>
+          </div>
+          <span class="platform-status">aktif</span>
+        </div>
+
+        <div class="platform-item is-active" data-platform="twitter">
+          <div class="platform-icon">X</div>
+          <div class="platform-copy">
+            <strong>X / Twitter</strong>
+            <small>Video & Foto</small>
+          </div>
+          <span class="platform-status">aktif</span>
+        </div>
+      </div>
+      <p class="small-note">Status aktif menandakan server backend siap menerima tautan dari platform tersebut.</p>
     </section>
 
     <section class="section" id="hasil" hidden>
@@ -80,8 +139,11 @@
           <p id="captionMedia" class="result-caption"></p>
 
           <div class="download-options">
+            <select id="qualitySelect" class="quality-select" aria-label="Pilih kualitas" hidden></select>
             <a id="downloadMedia" class="primary-download-btn" href="#" hidden download>Download</a>
             <a id="audioMedia" class="secondary-btn" href="#" hidden>Download audio</a>
+            <button id="downloadAllPhotos" class="secondary-btn" type="button" hidden>Download semua foto</button>
+            <button id="shareMedia" class="secondary-btn" type="button">Bagikan</button>
             <button id="copyMediaUrl" class="secondary-btn" type="button">Salin tautan</button>
             <button id="favoriteCurrent" class="secondary-btn" type="button">☆ Favorit</button>
           </div>
@@ -107,6 +169,16 @@
         </select>
       </div>
 
+      <div class="history-tools">
+        <button class="secondary-btn" id="selectToggle" type="button">Pilih</button>
+        <button class="secondary-btn" id="selectAllBtn" type="button" hidden>Pilih semua</button>
+        <button class="secondary-btn" id="deleteSelected" type="button" hidden>Hapus terpilih (0)</button>
+        <span class="tools-spacer"></span>
+        <button class="secondary-btn" id="exportHistory" type="button">Ekspor</button>
+        <button class="secondary-btn" id="importHistory" type="button">Impor</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
+
       <div class="history-grid" id="historyList"></div>
 
       <div class="empty-state" id="emptyHistory">
@@ -124,19 +196,19 @@
         <article class="step-card">
           <span>1</span>
           <h3>Salin tautan</h3>
-          <p>Buka aplikasi TikTok, ketuk ikon bagikan, lalu pilih "Salin tautan".</p>
+          <p>Buka aplikasinya (TikTok, Instagram, dll.), ketuk ikon bagikan, lalu pilih "Salin tautan".</p>
         </article>
 
         <article class="step-card">
           <span>2</span>
           <h3>Tempel di sini</h3>
-          <p>Kembali ke halaman ini, tempel tautan di kolom yang tersedia.</p>
+          <p>Kembali ke halaman ini. Tautan bisa ditempel otomatis, atau tekan tombol Tempel.</p>
         </article>
 
         <article class="step-card">
           <span>3</span>
           <h3>Ambil media</h3>
-          <p>Klik "Ambil media", lalu pilih file yang ingin disimpan.</p>
+          <p>Klik "Ambil media", pilih kualitas jika ada, lalu download. Tanpa pindah halaman.</p>
         </article>
       </div>
     </section>
@@ -160,6 +232,41 @@
 
         <div class="setting-row">
           <div>
+            <strong>Warna aksen</strong>
+            <p>Desain tetap hitam putih, pilih warna untuk tombol dan penanda.</p>
+            <div class="accent-list">
+              <button class="accent-btn" type="button" data-accent="mono" aria-label="Hitam putih" style="--swatch: linear-gradient(135deg, #0a0a0a 50%, #ffffff 50%)"></button>
+              <button class="accent-btn" type="button" data-accent="biru" aria-label="Biru" style="--swatch:#2563eb"></button>
+              <button class="accent-btn" type="button" data-accent="hijau" aria-label="Hijau" style="--swatch:#16a34a"></button>
+              <button class="accent-btn" type="button" data-accent="merah" aria-label="Merah" style="--swatch:#dc2626"></button>
+              <button class="accent-btn" type="button" data-accent="ungu" aria-label="Ungu" style="--swatch:#7c3aed"></button>
+              <button class="accent-btn" type="button" data-accent="oranye" aria-label="Oranye" style="--swatch:#ea580c"></button>
+              <button class="accent-btn" type="button" data-accent="pink" aria-label="Pink" style="--swatch:#db2777"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <strong>Tempel otomatis</strong>
+            <p>Isi kolom dari clipboard kalau ada tautan yang didukung.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="autoPaste" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <strong>Pasang aplikasi</strong>
+            <p>Tambahkan Downly ke layar utama. Kalau tombol tidak muncul, pakai menu browser → Tambahkan ke layar utama.</p>
+          </div>
+          <button class="secondary-btn" id="installApp" type="button" hidden>Pasang</button>
+        </div>
+
+        <div class="setting-row">
+          <div>
             <strong>Simpan riwayat</strong>
             <p>Simpan riwayat di browser perangkat.</p>
           </div>
@@ -178,15 +285,12 @@
         </div>
       </div>
 
-      <p class="small-note">
-        Gunakan media sesuai izin pemilik dan ketentuan platform sumber.
-      </p>
     </section>
   </main>
 
   <footer class="footer">
     <a class="logo" href="#home">downly<span>.</span></a>
-    <p>Alat kecil untuk menyimpan video TikTok.</p>
+    <p>Alat kecil untuk menyimpan video dan foto.</p>
     <span>© 2026 Downly</span>
   </footer>
 </body>

@@ -235,7 +235,7 @@ select:focus-visible {
   line-height: 1.6;
 }
 
-/* ---------- Platform ---------- */
+/* ---------- Platform (BARU) ---------- */
 .platform-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -774,4 +774,173 @@ select:focus-visible {
   .download-options { flex-direction: column; }
   .download-options > * { width: 100%; }
   .footer { align-items: flex-start; flex-direction: column; }
+}
+
+/* ---------- Warna aksen (default: hitam putih) ---------- */
+body[data-accent="biru"]   { --accent: #2563eb; --accent-text: #ffffff; }
+body[data-accent="hijau"]  { --accent: #16a34a; --accent-text: #ffffff; }
+body[data-accent="merah"]  { --accent: #dc2626; --accent-text: #ffffff; }
+body[data-accent="ungu"]   { --accent: #7c3aed; --accent-text: #ffffff; }
+body[data-accent="oranye"] { --accent: #ea580c; --accent-text: #ffffff; }
+body[data-accent="pink"]   { --accent: #db2777; --accent-text: #ffffff; }
+
+body.dark-mode[data-accent="biru"]   { --accent: #60a5fa; --accent-text: #0a0a0a; }
+body.dark-mode[data-accent="hijau"]  { --accent: #4ade80; --accent-text: #0a0a0a; }
+body.dark-mode[data-accent="merah"]  { --accent: #f87171; --accent-text: #0a0a0a; }
+body.dark-mode[data-accent="ungu"]   { --accent: #a78bfa; --accent-text: #0a0a0a; }
+body.dark-mode[data-accent="oranye"] { --accent: #fb923c; --accent-text: #0a0a0a; }
+body.dark-mode[data-accent="pink"]   { --accent: #f472b6; --accent-text: #0a0a0a; }
+
+body:not([data-accent="mono"]) .logo span { color: var(--accent); }
+
+.accent-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+
+.accent-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--swatch);
+  transition: transform .15s;
+}
+
+.accent-btn:hover { transform: scale(1.08); }
+.accent-btn[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: 3px; }
+
+/* ---------- Download & toast ---------- */
+.is-loading { opacity: .6; pointer-events: none; }
+.photo-item { cursor: pointer; }
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+  max-width: calc(100% - 40px);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  color: var(--bg);
+  background: var(--text);
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity .2s, transform .2s;
+}
+
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Mode satu / banyak link ---------- */
+.mode-switch {
+  display: inline-flex;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.mode-switch button {
+  padding: 6px 14px;
+  border: 0;
+  color: var(--muted);
+  background: var(--bg);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color .15s, color .15s;
+}
+
+.mode-switch button + button { border-left: 1px solid var(--border); }
+.mode-switch button[aria-pressed="true"] { color: var(--bg); background: var(--text); }
+
+.multi-input {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: var(--bg);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.multi-input:focus { border-color: var(--text); outline: 0; }
+
+.batch-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.batch-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.batch-url {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-status {
+  flex-shrink: 0;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ---------- Pilihan kualitas ---------- */
+.quality-select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  background: var(--bg);
+  font-size: 12px;
+}
+
+.quality-select:focus { border-color: var(--text); outline: 0; }
+
+/* ---------- Kelola riwayat ---------- */
+.history-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.tools-spacer { flex: 1; }
+
+.history-tools .secondary-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.history-thumb { position: relative; }
+
+.history-check {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.history-card.is-selected { border-color: var(--border-strong); }
+
+@media (max-width: 420px) {
+  .quality-select { width: 100%; }
+  .tools-spacer { display: none; }
 }
