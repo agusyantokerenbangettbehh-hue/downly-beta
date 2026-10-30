@@ -7,7 +7,6 @@
   <meta name="description" content="Downly — Download video, foto, dan audio dari TikTok, Instagram, YouTube, Facebook, dan X">
   <title>Downly — Download video & foto</title>
   <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -60,12 +59,15 @@
             Masukkan tautan di atas.
           </p>
 
+          <div class="progress-container" id="progressContainer" hidden>
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+
           <ol class="batch-list" id="batchList" hidden></ol>
         </form>
       </div>
     </section>
 
-    <!-- SECTION PLATFORM BARU -->
     <section class="section" id="platform">
       <div class="section-heading">
         <h2>Platform didukung</h2>
@@ -139,12 +141,14 @@
           <p id="captionMedia" class="result-caption"></p>
 
           <div class="download-options">
+            <input type="text" id="customFilename" class="filename-input" placeholder="Nama file (opsional)" hidden>
             <select id="qualitySelect" class="quality-select" aria-label="Pilih kualitas" hidden></select>
             <a id="downloadMedia" class="primary-download-btn" href="#" hidden download>Download</a>
             <a id="audioMedia" class="secondary-btn" href="#" hidden>Download audio</a>
             <button id="downloadAllPhotos" class="secondary-btn" type="button" hidden>Download semua foto</button>
             <button id="shareMedia" class="secondary-btn" type="button">Bagikan</button>
             <button id="copyMediaUrl" class="secondary-btn" type="button">Salin tautan</button>
+            <button id="copyCaption" class="secondary-btn" type="button" hidden>Salin caption</button>
             <button id="favoriteCurrent" class="secondary-btn" type="button">☆ Favorit</button>
           </div>
         </div>
@@ -248,6 +252,19 @@
 
         <div class="setting-row">
           <div>
+            <strong>Warna aksen custom</strong>
+            <p>Pilih warna sendiri sesukamu. Klik preset di atas untuk kembali.</p>
+            <div class="color-picker-group">
+              <label class="color-picker-label">
+                <input type="color" id="customAccent" value="#0a0a0a">
+                <span>Pilih warna aksen</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
             <strong>Tempel otomatis</strong>
             <p>Isi kolom dari clipboard kalau ada tautan yang didukung.</p>
           </div>
@@ -284,7 +301,6 @@
           <button class="secondary-btn" id="resetSettings" type="button">Reset</button>
         </div>
       </div>
-
     </section>
   </main>
 
@@ -293,5 +309,7 @@
     <p>Alat kecil untuk menyimpan video dan foto.</p>
     <span>© 2026 Downly</span>
   </footer>
+
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
