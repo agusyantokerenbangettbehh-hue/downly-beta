@@ -8,8 +8,12 @@
   <meta name="description" content="Downly — Download video, foto, dan audio dari TikTok, Instagram, YouTube, Facebook, dan X">
   <title>Downly — Download video & foto</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="animations.css">
+  <script>if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("js-anim")</script>
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="preloader" aria-hidden="true"><div class="pre-center"><div class="pre-logo"><span>D</span><span>o</span><span>w</span><span>n</span><span>l</span><span>y</span></div><div class="pre-text" id="preText">Menyiapkan Downly…</div><div class="pre-bar"><i id="preFill"></i></div><div class="pre-pct" id="prePct">0%</div></div></div>
   <header class="topbar">
     <a class="logo" href="#home">downly<span>.</span></a>
 
@@ -120,7 +124,6 @@
           <span class="platform-status">aktif</span>
         </div>
       </div>
-      <p class="small-note">Status aktif menandakan server backend siap menerima tautan dari platform tersebut.</p>
     </section>
 
     <section class="section" id="hasil" hidden>
@@ -312,5 +315,6 @@
   </footer>
 
   <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/anim.js"></script>
 </body>
 </html>
