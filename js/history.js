@@ -34,7 +34,7 @@ export function renderHistory() {
   const list = document.getElementById("historyList"); const empty = document.getElementById("emptyHistory"); if (!list) return; list.innerHTML = "";
   const search = document.getElementById("searchHistory").value.trim().toLowerCase(); const filter = document.getElementById("filterHistory").value; const sort = document.getElementById("sortHistory").value;
   let items = state.history.filter(item => (item.title || "").toLowerCase().includes(search));
-  if (filter === "favorite") items = items.filter(item => item.favorite);
+  if (filter === "favorite") items = items.filter(item => item.favorite); else if (filter.startsWith("platform:")) items = items.filter(item => item.platform === filter.slice(9));
   items.sort((a, b) => { const difference = new Date(b.date) - new Date(a.date); return sort === "oldest" ? -difference : difference; });
   state.visibleIds = items.map(item => item.id); if (empty) empty.hidden = items.length > 0;
 

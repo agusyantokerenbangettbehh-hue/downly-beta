@@ -1,8 +1,9 @@
+import { initExtra } from "./extra.js";
 import { MAX_BATCH, ACCENTS } from "./config.js";
 import { state } from "./state.js";
 import { showStatus, showToast, sleep, saveBlob, fetchBlob, extFromType, mediaBaseName, normalizeMediaUrl, detectPlatform, extractUrls } from "./utils.js";
 import { resolveMedia, downloadMediaItem, downloadFile } from "./api.js";
-import { displayMedia, applySettings, closeResultPanel } from "./ui.js";
+import { displayMedia, applySettings, closeResultPanel, updatePhotoSelection } from "./ui.js";
 import { loadSettings, storeSettings, loadHistory, persistHistory, addHistory, renderHistory, updateSelectCount } from "./history.js";
 import { updateFavoriteButton } from "./state.js";
 
@@ -20,17 +21,37 @@ modeSingle.addEventListener("click", () => setMode(false)); modeBatch.addEventLi
 
 function setBusy(busy) { downloadBtn.disabled = busy; downloadBtn.textContent = busy ? "Memproses…" : state.batchMode ? "Download semua" : "Ambil media"; }
 
+let batchCancel = false;
 async function runBatch(urls) {
-  batchList.innerHTML = ""; batchList.hidden = false;
-  const statuses = urls.map(url => { const row = document.createElement("li"); const link = document.createElement("span"); const status = document.createElement("strong"); link.className = "batch-url"; link.textContent = url; status.className = "batch-status"; status.textContent = "Menunggu"; row.append(link, status); batchList.appendChild(row); return status; });
-  let success = 0;
-  for (let index = 0; index < urls.length; index++) {
-    const status = statuses[index];
-    try { status.textContent = "Mengambil media…"; const platform = detectPlatform(urls[index]); const media = await resolveMedia(urls[index], platform); addHistory(media); await downloadMediaItem(media, progress => { status.textContent = "Mengunduh " + Math.round(progress * 100) + "%"; }, seconds => { status.textContent = "Memproses server… " + seconds + " d"; }); status.textContent = "Selesai ✓"; success++; }
-    catch (error) { console.error("Batch download gagal:", error); status.textContent = "Gagal: " + (error.message || "Error"); }
-    if (index < urls.length - 1) await sleep(1200);
-  }
-  showToast(`${success} dari ${urls.length} tautan selesai`); showStatus(`Selesai: ${success} berhasil, ${urls.length - success} gagal.`);
+  batchList.innerHTML = ""; batchList.hidden = false; batchCancel = false;
+  const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "batch-cancel"; cancel.textContent = "Batalkan antrean";
+  cancel.addEventListener("click", () => { batchCancel = true; cancel.disabled = true; cancel.textContent = "Membatalkan…"; });
+  batchList.before(cancel);
+  const rows = urls.map(url => {
+    const li = document.createElement("li"), link = document.createElement("span"), st = document.createElement("strong"), retry = document.createElement("button");
+    link.className = "batch-url"; link.textContent = url; st.className = "batch-status"; st.textContent = "Menunggu";
+    retry.type = "button"; retry.className = "batch-retry"; retry.textContent = "Coba lagi"; retry.hidden = true;
+    li.append(link, st, retry); batchList.appendChild(li); return { url, st, retry, ok: false };
+  });
+  const run = async row => {
+    row.retry.hidden = true;
+    try {
+      row.st.textContent = "Mengambil media…";
+      const media = await resolveMedia(row.url, detectPlatform(row.url)); addHistory(media);
+      await downloadMediaItem(media, p => { row.st.textContent = "Mengunduh " + Math.round(p * 100) + "%"; }, s => { row.st.textContent = "Memproses server… " + s + " d"; });
+      row.st.textContent = "Selesai ✓"; row.ok = true;
+    } catch (error) { console.error("Batch download gagal:", error); row.st.textContent = "Gagal: " + (error.message || "Error"); row.retry.hidden = false; }
+  };
+  rows.forEach(r => r.retry.addEventListener("click", async () => { if (downloadBtn.disabled) return; await run(r); const n = rows.filter(x => x.ok).length; showStatus(`Selesai: ${n} berhasil, ${rows.length - n} gagal.`); }));
+  try {
+    for (let i = 0; i < rows.length; i++) {
+      if (batchCancel) { rows[i].st.textContent = "Dibatalkan"; rows[i].retry.hidden = false; continue; }
+      await run(rows[i]);
+      if (i < rows.length - 1 && !batchCancel) await sleep(1200);
+    }
+  } finally { cancel.remove(); }
+  const n = rows.filter(x => x.ok).length;
+  showToast(`${n} dari ${rows.length} tautan selesai`); showStatus(`Selesai: ${n} berhasil, ${rows.length - n} gagal.`);
 }
 
 form.addEventListener("submit", async event => {
@@ -45,7 +66,7 @@ form.addEventListener("submit", async event => {
   if (!platform) { showStatus("URL tidak valid."); return; }
   setBusy(true); showStatus("Mengambil media dari platform…");
   try {
-    const media = await resolveMedia(url, platform); state.currentMedia = media; displayMedia(media); addHistory(media); updateFavoriteButton(); showStatus("Media berhasil diambil."); resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    const media = await resolveMedia(url, platform); state.currentMedia = media; if (state.history.some(h => h.id === media.id)) showToast("Media ini sudah pernah kamu ambil sebelumnya"); displayMedia(media); addHistory(media); updateFavoriteButton(); showStatus("Media berhasil diambil."); resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) { console.error("Resolver error:", error); showStatus(error.message || "Gagal mengambil media. Coba lagi nanti."); }
   finally { setBusy(false); }
 });
@@ -53,11 +74,18 @@ form.addEventListener("submit", async event => {
 [downloadMedia, audioMedia].forEach(link => { link.addEventListener("click", event => { event.preventDefault(); const url = link.getAttribute("href"); if (!url || url === "#") return; downloadFile(url, mediaBaseName(), link.dataset.ext, link, link.dataset.label); }); });
 
 downloadAllPhotos.addEventListener("click", async () => {
-  const images = state.currentMedia?.images || []; if (!images.length || downloadAllPhotos.dataset.busy) return; downloadAllPhotos.dataset.busy = "1"; let completed = 0;
+  const images = state.currentMedia?.images || [];
+  if (!images.length || downloadAllPhotos.dataset.busy) return;
+  const indexes = state.selectedPhotos.size ? [...state.selectedPhotos].sort((a, b) => a - b) : images.map((_, i) => i);
+  downloadAllPhotos.dataset.busy = "1"; let completed = 0;
   try {
-    for (let index = 0; index < images.length; index++) { downloadAllPhotos.textContent = `Foto ${index + 1}/${images.length}…`; try { const blob = await fetchBlob(images[index]); saveBlob(blob, `${mediaBaseName()}-${index + 1}.${extFromType(blob.type, "jpg")}`); completed++; } catch (error) { console.error(error); } await sleep(500); }
-    showToast(`${completed} dari ${images.length} foto berhasil diunduh`);
-  } finally { delete downloadAllPhotos.dataset.busy; downloadAllPhotos.textContent = "Download semua foto"; }
+    for (let n = 0; n < indexes.length; n++) {
+      const index = indexes[n]; downloadAllPhotos.textContent = `Foto ${n + 1}/${indexes.length}…`;
+      try { const blob = await fetchBlob(images[index]); saveBlob(blob, `${mediaBaseName()}-${index + 1}.${extFromType(blob.type, "jpg")}`); completed++; } catch (error) { console.error(error); }
+      await sleep(500);
+    }
+    showToast(`${completed} dari ${indexes.length} foto berhasil diunduh`);
+  } finally { delete downloadAllPhotos.dataset.busy; updatePhotoSelection(); }
 });
 
 const pasteBtn = document.getElementById("pasteBtn");
@@ -136,3 +164,12 @@ if (saveHistoryInput) {
 applySettings();
 renderHistory();
 updateSelectCount();
+
+if (copyCaptionBtn) {
+  const thumbBtn = document.createElement("button"); thumbBtn.type = "button"; thumbBtn.className = copyCaptionBtn.className; thumbBtn.textContent = "Unduh thumbnail"; copyCaptionBtn.after(thumbBtn);
+  thumbBtn.addEventListener("click", async () => {
+    const cover = state.currentMedia?.cover; if (!cover) return showToast("Thumbnail tidak tersedia.");
+    try { const blob = await fetchBlob(cover); saveBlob(blob, `${mediaBaseName()}-thumb.${extFromType(blob.type, "jpg")}`); showToast("Thumbnail diunduh ✓"); } catch { showToast("Gagal mengunduh thumbnail."); }
+  });
+}
+initExtra();

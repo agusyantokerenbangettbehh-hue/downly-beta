@@ -1,3 +1,4 @@
+import { pickQuality, applyTemplate } from "./extra.js";
 import { getQualities, usesBackend, buildProxyUrl, buildBackendUrl } from "./api.js";
 import { state } from "./state.js";
 
@@ -80,15 +81,51 @@ export function applySettings() {
   });
 }
 
-function renderPhotoGallery(images) {
-  images.forEach((url, index) => {
-    const link = document.createElement("a"); link.className = "photo-item"; link.href = url; link.title = "Download foto " + (index + 1);
-    link.addEventListener("click", async event => {
-      event.preventDefault(); if (link.dataset.busy) return; link.dataset.busy = "1";
-      try { const { fetchBlob, saveBlob, extFromType, mediaBaseName, showToast } = await import("./utils.js"); const blob = await fetchBlob(url); saveBlob(blob, `${mediaBaseName()}-${index + 1}.${extFromType(blob.type, "jpg")}`); showToast("Foto berhasil diunduh ✓"); } catch (error) { console.error(error); const { showToast } = await import("./utils.js"); showToast("Gagal mengunduh foto."); } finally { delete link.dataset.busy; }
-    });
-    const image = document.createElement("img"); image.src = url; image.alt = "Foto " + (index + 1); image.loading = "lazy"; link.appendChild(image); photoGallery.appendChild(link);
+let selectAllBtn;
+function ensureSelectAllBtn() {
+  if (selectAllBtn) return selectAllBtn;
+  selectAllBtn = document.createElement("button");
+  selectAllBtn.type = "button"; selectAllBtn.className = downloadAllPhotos.className; selectAllBtn.hidden = true;
+  photoGallery.after(selectAllBtn);
+  selectAllBtn.addEventListener("click", () => {
+    const items = [...photoGallery.querySelectorAll(".photo-item")];
+    const all = state.selectedPhotos.size === items.length;
+    items.forEach((_, i) => setPhotoSelected(i, !all));
+    updatePhotoSelection();
   });
+  return selectAllBtn;
+}
+
+function setPhotoSelected(index, on) {
+  const item = photoGallery.querySelectorAll(".photo-item")[index];
+  if (!item) return;
+  on ? state.selectedPhotos.add(index) : state.selectedPhotos.delete(index);
+  item.classList.toggle("selected", on);
+  item.setAttribute("aria-pressed", String(on));
+  item.querySelector(".photo-check").textContent = on ? "✓" : "";
+}
+
+export function updatePhotoSelection() {
+  const total = state.currentMedia?.images?.length || 0;
+  const count = state.selectedPhotos.size;
+  downloadAllPhotos.textContent = count ? `Download terpilih (${count})` : "Download semua foto";
+  ensureSelectAllBtn().textContent = count === total ? "Batal pilih semua" : "Pilih semua";
+}
+
+function renderPhotoGallery(images) {
+  state.selectedPhotos = new Set();
+  images.forEach((url, index) => {
+    const link = document.createElement("a");
+    link.className = "photo-item"; link.href = url; link.title = "Pilih foto " + (index + 1);
+    link.setAttribute("aria-pressed", "false"); link.style.setProperty("--i", index);
+    const image = document.createElement("img");
+    image.src = url; image.alt = "Foto " + (index + 1); image.loading = "lazy";
+    const mark = document.createElement("span"); mark.className = "photo-check";
+    link.append(image, mark);
+    link.addEventListener("click", event => { event.preventDefault(); setPhotoSelected(index, !state.selectedPhotos.has(index)); updatePhotoSelection(); });
+    photoGallery.appendChild(link);
+  });
+  updatePhotoSelection();
 }
 
 function configureMediaLink(element, url, label, ext, formatId = "", mode = "video") {
@@ -109,13 +146,13 @@ export function displayMedia(media) {
   else if (media.cover) { resultCard.dataset.type = "image"; thumbnail.hidden = false; thumbnail.src = media.cover; mediaBadge.textContent = "Gambar"; mediaBadge.hidden = false; configureMediaLink(downloadMedia, media.cover, "Download gambar", "jpg"); }
   else { resultCard.dataset.type = "empty"; downloadMedia.hidden = true; }
 
-  if (hasVideo && qualities.length > 1) { qualities.forEach((quality, index) => { const option = document.createElement("option"); option.value = String(index); option.textContent = quality.label; qualitySelect.appendChild(option); }); qualitySelect.value = "0"; qualitySelect.hidden = false; }
+  if (hasVideo && qualities.length > 1) { qualities.forEach((quality, index) => { const option = document.createElement("option"); option.value = String(index); option.textContent = quality.label; qualitySelect.appendChild(option); }); const pi = Math.max(0, qualities.indexOf(pickQuality(qualities))); qualitySelect.value = String(pi); if (pi > 0) setTimeout(() => qualitySelect.dispatchEvent(new Event("change")), 0); qualitySelect.hidden = false; }
   configureMediaLink(audioMedia, usesBackend(media) ? media.url : media.audio, "Download audio", "mp3", "", "audio");
-  downloadAllPhotos.hidden = !hasImages;
+  downloadAllPhotos.hidden = !hasImages; ensureSelectAllBtn().hidden = !hasImages || images.length < 2;
 
   const customFilename = document.getElementById("customFilename");
   const copyCaption = document.getElementById("copyCaption");
-  if (customFilename) { customFilename.hidden = false; customFilename.value = media.title || ""; }
+  if (customFilename) { customFilename.hidden = false; customFilename.value = applyTemplate(media); }
   if (copyCaption) copyCaption.hidden = false;
 }
 

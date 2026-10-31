@@ -1,7 +1,7 @@
 export const state = {
   currentMedia: null, batchMode: false, selectMode: false,
   visibleIds: [], selected: new Set(), lastClipboard: "",
-  deferredPrompt: null, settings: null, history: []
+  deferredPrompt: null, selectedPhotos: new Set(), settings: null, history: []
 };
 
 export function updateFavoriteButton() {
